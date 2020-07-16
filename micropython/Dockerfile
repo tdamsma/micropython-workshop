@@ -1,103 +1,100 @@
 FROM ubuntu:bionic
 
-ARG DEBIAN_FRONTEND=noninteractive
+ARG REPO=https://github.com/pfalcon/pycopy
+ARG BRANCH=v3.1.5
+ARG DOUBLE_PRECISION_FLOATS=false
 
-RUN apt-get update -qq \
-    && apt-get install -qqy \
-    autoconf \
-    automake \
-    bash \
-    bison \
-    build-essential \
-    bzip2 \
-    flex \
-    g++ \
-    gawk \
-    gcc \
+ENV WORK_DIR=/home/esp32
+
+WORKDIR ${WORK_DIR}
+
+# INSTALL DEPENDENCIES
+
+RUN apt-get update && \
+    apt-get install -y \
     git \
+    wget \
+    flex \
+    bison \
     gperf \
-    help2man \
-    libexpat-dev \
-    libffi-dev \
-    libtool \
-    libtool-bin \
-    make \
-    ncurses-dev \
-    pkg-config \
     python \
-    python-dev \
-    python-serial \
+    python-pip \
+    python-setuptools \
     python3 \
     python3-pip \
-    sed \
-    texinfo \
-    unrar-free \
-    unzip \
-    wget \ 
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+    python-serial \
+    cmake \
+    ninja-build \
+    ccache \
+    libffi-dev \
+    libssl-dev \
+    dfu-util
 
-RUN pip3 install pyparsing
+RUN pip3 install "pyparsing==2.3.1"
 
-RUN useradd --no-create-home micropython
+# CROSS-COMPILER
 
-RUN mkdir /esp
-RUN chown -R micropython:micropython esp
-USER micropython
-WORKDIR /esp
+RUN wget https://dl.espressif.com/dl/xtensa-esp32-elf-linux64-1.22.0-80-g6c4433a-5.2.0.tar.gz && \
+    mkdir esp && \
+    cd esp && \
+    tar -zxvf ../xtensa-esp32-elf-linux64-1.22.0-80-g6c4433a-5.2.0.tar.gz
 
-# Download crosstool-NG and build it:
-RUN git clone -b xtensa-1.22.x https://github.com/espressif/crosstool-NG.git
-RUN cd crosstool-NG && ./bootstrap && ./configure --enable-local && make install
+ENV PATH="${WORK_DIR}/esp/xtensa-esp32-elf/bin:${PATH}"
 
-# Build the toolchain:
-RUN cd crosstool-NG && ./ct-ng xtensa-esp32-elf
-RUN cd crosstool-NG && ./ct-ng build
-RUN cd crosstool-NG && chmod -R u+w builds/xtensa-esp32-elf
+# PYCOPY
 
-ARG BRANCH=master
+RUN git clone ${REPO} micropython && \
+    cd micropython && \
+    git checkout ${BRANCH} && \
+    cd ports/esp32/
 
-# Find correct version of esp-idf, depends on selected branch
-ADD --chown=micropython:micropython https://raw.githubusercontent.com/pfalcon/micropython/$BRANCH/ports/esp32/Makefile /tmp/ESP32-Makefile
+WORKDIR ${WORK_DIR}/micropython
+
+RUN git submodule update --init
+
+RUN make -C mpy-cross && \
+    git submodule init lib/berkeley-db-1.xx && \
+    git submodule update
+
+WORKDIR ${WORK_DIR}/micropython/ports/esp32
+
+RUN echo "ESPIDF = /home/esp32/esp-idf" >> makefile && \
+    echo "#PORT = /dev/ttyUSB0" >> makefile && \
+    echo "#FLASH_MODE = qio" >> makefile && \
+    echo "#FLASH_SIZE = 4MB" >> makefile && \
+    echo "#CROSS_COMPILE = xtensa-esp32-elf-" >> makefile && \
+    echo "" >> makefile && \
+    echo "include Makefile" >> makefile && \
+    cat makefile
+
+# Extract ESPIDF commit hash from Makefile
+RUN grep -oP '^ESPIDF_SUPHASH_V3 ?:= ?\K(.*)$' Makefile > ${WORK_DIR}/espdif_suphash_v3 && \
+    printf "ESPIDF_SUPHASH_V3 = %s\n" $(cat ${WORK_DIR}/espdif_suphash_v3)
+
+# ESPIDF
+
+WORKDIR ${WORK_DIR}
 
 RUN git clone https://github.com/espressif/esp-idf.git
-RUN cd esp-idf && cat /tmp/ESP32-Makefile | grep "^ESPIDF_SUPHASH_V4" | awk '{print $NF}' | xargs git checkout
-RUN cd esp-idf && git submodule update --init --recursive
 
-ENV PATH="${PATH}:/esp/crosstool-NG/builds/xtensa-esp32-elf/bin"
-ENV ESPIDF="/esp/esp-idf"
+RUN export ESPIDF_SUPHASH_V3=$(cat ${WORK_DIR}/espdif_suphash_v3) && \
+    cd esp-idf && \
+    git checkout ${ESPIDF_SUPHASH_V3} && \
+    git submodule update --init
 
-# Cache buster for git clone #https://stackoverflow.com/questions/36996046/how-to-prevent-dockerfile-caching-git-clone
-ADD https://api.github.com/repos/pfalcon/micropython/git/refs/heads/$BRANCH version.json
-RUN git clone --recursive https://github.com/pfalcon/micropython.git \
-    && cd micropython && git checkout $BRANCH && git submodule update --init
+# Install custom components
 
-RUN make --directory /esp/micropython -C mpy-cross
+RUN git clone https://github.com/devbis/st7789_mpy.git ${WORK_DIR}/st7789_mpy
+RUN cd ${WORK_DIR}/micropython/ports/esp32 && make USER_C_MODULES=../../../st7789_mpy/ all
 
-RUN make --directory /esp/micropython/ports/unix
+# COMPILE FIRMWARE
 
-# install required pyparsing version
-USER root 
-RUN pip3 install "pyparsing==2.3.1"
-USER micropython
+WORKDIR ${WORK_DIR}/micropython/ports/esp32
 
-# add modules to be frozen in the built firmware, customize as required
-RUN cd /esp/micropython/ports/unix && ./pycopy -m upip install -p ../esp32/modules \
-    micropython-uasyncio \
-    micropython-uaiohttpclient \
-    micropython-logging
+# Set double precision floats if set
+RUN if [ "$DOUBLE_PRECISION_FLOATS" = "true" ]; then \
+    echo "\e[32mDouble precision floats\e[39m"; \
+    sed -i 's/MICROPY_FLOAT_IMPL_FLOAT/MICROPY_FLOAT_IMPL_DOUBLE/g' mpconfigport.h; \
+    fi
 
-# add drivers to be frozen in the built firmware, customize as required
-RUN ln /esp/micropython/drivers/display/ssd1306.py /esp/micropython/ports/esp8266/modules/ssd1306.py
-RUN ln /esp/micropython/drivers/sdcard/sdcard.py /esp/micropython/ports/esp8266/modules/sdcard.py
-
-# or download from github
-RUN wget -O /esp/micropython/ports/esp32/modules/bmp280.py  https://raw.githubusercontent.com/dafvid/micropython-bmp280/master/bmp280.py
-
-RUN git clone https://github.com/devbis/st7789_mpy.git /esp/st7789_mpy
-RUN cd /esp/micropython/ports/esp32 && make USER_C_MODULES=../../../st7789_mpy/ all
-# RUN cp st7789_driver/st7789 /esp/micropython/ports/esp32/modules
-
-
-# # Finally build the firmware
-RUN make --directory /esp/micropython/ports/esp32
+RUN make
