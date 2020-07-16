@@ -1,4 +1,13 @@
+# Micropython on an ESP32
+
+This is a workshop for using micropython on a ttgo ESP32 with integrated 240 x 135 pixel lcd color display
+
+<img src="https://imgaz3.staticbg.com/thumb/large/oaupload/banggood/images/16/CA/808b45ee-f288-4048-a4a9-b21a5d1c7e13.jpg" alt="ESP32"
+	title="ESP32 with display" width="50%" height="50%" />
+
 ## Building the firmware
+
+To run the latest version of the pycopy micropython fork with driver for the display follow the steps below:
 
 Download the repository and build the Docker image:
 
@@ -45,9 +54,14 @@ alias amp='ampy --port /dev/ttyS5 --baud 115200'
 alias rsh='rshell --port /dev/ttyS5 --baud 115200 --buffer-size 2048 repl'
 ```
 
-On the ESP32 first the boot.py is run, and the main.py. Best to put custom code in main.py. To put the snake programm on the ESP32, copy main.py and display.py to the ESP32:
+On the ESP32 first the boot.py is run, and the main.py. Best to put custom code in main.py. 
+
+## Snake demo
+
+To put the snake program on the ESP32, copy main.py and display.py to the ESP32:
 
 ```shell
 amp put snake/main.py main.py
 amp put snake/display.py display.py
 ```
+Now reboot (powercycle, press reset butto on right, or hit ctrl+D in rshell python interpreter) and the snake game starts
