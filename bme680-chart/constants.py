@@ -1,3 +1,5 @@
+"""BME680 constants, structures and utilities."""
+
 # BME680 General config
 POLL_PERIOD_MS = 10
 
@@ -18,7 +20,7 @@ FIELD_LENGTH = 15
 FIELD_ADDR_OFFSET = 17
 
 # Soft reset command
-SOFT_RESET_CMD = 0xb6
+SOFT_RESET_CMD = 0xB6
 
 # Error code definitions
 OK = 0
@@ -45,29 +47,29 @@ ADDR_SENS_CONF_START = 0x5A
 ADDR_GAS_CONF_START = 0x64
 
 # Field settings
-FIELD0_ADDR = 0x1d
+FIELD0_ADDR = 0x1D
 
 # Heater settings
-RES_HEAT0_ADDR = 0x5a
+RES_HEAT0_ADDR = 0x5A
 GAS_WAIT0_ADDR = 0x64
 
 # Sensor configuration registers
 CONF_HEAT_CTRL_ADDR = 0x70
 CONF_ODR_RUN_GAS_NBC_ADDR = 0x71
 CONF_OS_H_ADDR = 0x72
-MEM_PAGE_ADDR = 0xf3
+MEM_PAGE_ADDR = 0xF3
 CONF_T_P_MODE_ADDR = 0x74
 CONF_ODR_FILT_ADDR = 0x75
 
 # Coefficient's address
 COEFF_ADDR1 = 0x89
-COEFF_ADDR2 = 0xe1
+COEFF_ADDR2 = 0xE1
 
 # Chip identifier
-CHIP_ID_ADDR = 0xd0
+CHIP_ID_ADDR = 0xD0
 
 # Soft reset register
-SOFT_RESET_ADDR = 0xe0
+SOFT_RESET_ADDR = 0xE0
 
 # Heater control settings
 ENABLE_HEATER = 0x00
@@ -118,7 +120,7 @@ TMP_BUFFER_LENGTH = 40
 REG_BUFFER_LENGTH = 6
 FIELD_DATA_LENGTH = 3
 GAS_REG_BUF_LENGTH = 20
-GAS_HEATER_PROF_LEN_MAX  = 10
+GAS_HEATER_PROF_LEN_MAX = 10
 
 # Settings selector
 OST_SEL = 1
@@ -133,28 +135,28 @@ GAS_SENSOR_SEL = GAS_MEAS_SEL | RUN_GAS_SEL | NBCONV_SEL
 
 # Number of conversion settings
 NBCONV_MIN = 0
-NBCONV_MAX = 9 # Was 10, but there are only 10 settings: 0 1 2 ... 8 9
+NBCONV_MAX = 9  # Was 10, but there are only 10 settings: 0 1 2 ... 8 9
 
 # Mask definitions
 GAS_MEAS_MSK = 0x30
-NBCONV_MSK = 0X0F
-FILTER_MSK = 0X1C
-OST_MSK = 0XE0
-OSP_MSK = 0X1C
-OSH_MSK = 0X07
+NBCONV_MSK = 0x0F
+FILTER_MSK = 0x1C
+OST_MSK = 0xE0
+OSP_MSK = 0x1C
+OSH_MSK = 0x07
 HCTRL_MSK = 0x08
 RUN_GAS_MSK = 0x10
 MODE_MSK = 0x03
 RHRANGE_MSK = 0x30
-RSERROR_MSK = 0xf0
+RSERROR_MSK = 0xF0
 NEW_DATA_MSK = 0x80
-GAS_INDEX_MSK = 0x0f
-GAS_RANGE_MSK = 0x0f
+GAS_INDEX_MSK = 0x0F
+GAS_RANGE_MSK = 0x0F
 GASM_VALID_MSK = 0x20
 HEAT_STAB_MSK = 0x10
 MEM_PAGE_MSK = 0x10
 SPI_RD_MSK = 0x80
-SPI_WR_MSK = 0x7f
+SPI_WR_MSK = 0x7F
 BIT_H1_DATA_MSK = 0x0F
 
 # Bit position definitions for sensor settings
@@ -213,31 +215,66 @@ REG_RUN_GAS_INDEX = 1
 REG_HCTRL_INDEX = 0
 
 # Look up tables for the possible gas range values
-lookupTable1 = [2147483647, 2147483647, 2147483647, 2147483647,
-        2147483647, 2126008810, 2147483647, 2130303777, 2147483647,
-        2147483647, 2143188679, 2136746228, 2147483647, 2126008810,
-        2147483647, 2147483647]
+lookupTable1 = [
+    2147483647,
+    2147483647,
+    2147483647,
+    2147483647,
+    2147483647,
+    2126008810,
+    2147483647,
+    2130303777,
+    2147483647,
+    2147483647,
+    2143188679,
+    2136746228,
+    2147483647,
+    2126008810,
+    2147483647,
+    2147483647,
+]
 
-lookupTable2 = [4096000000, 2048000000, 1024000000, 512000000,
-        255744255, 127110228, 64000000, 32258064,
-        16016016, 8000000, 4000000, 2000000,
-        1000000, 500000, 250000, 125000]
+lookupTable2 = [
+    4096000000,
+    2048000000,
+    1024000000,
+    512000000,
+    255744255,
+    127110228,
+    64000000,
+    32258064,
+    16016016,
+    8000000,
+    4000000,
+    2000000,
+    1000000,
+    500000,
+    250000,
+    125000,
+]
+
 
 def bytes_to_word(msb, lsb, bits=16, signed=False):
+    """Convert a most and least significant byte into a word."""
+    # TODO: Reimpliment with struct
     word = (msb << 8) | lsb
     if signed:
         word = twos_comp(word, bits)
     return word
 
+
 def twos_comp(val, bits=16):
+    """Convert two bytes into a two's compliment signed word."""
+    # TODO: Reimpliment with struct
     if val & (1 << (bits - 1)) != 0:
         val = val - (1 << bits)
     return val
 
-# Sensor field data structure
 
 class FieldData:
-    def __init__(self):
+    """Structure for storing BME680 sensor data."""
+
+    def __init__(self):  # noqa D107
         # Contains new_data, gasm_valid & heat_stab
         self.status = None
         self.heat_stable = False
@@ -254,10 +291,11 @@ class FieldData:
         # Gas resistance in Ohms
         self.gas_resistance = None
 
-# Structure to hold the Calibration data
 
 class CalibrationData:
-    def __init__(self):
+    """Structure for storing BME680 calibration data."""
+
+    def __init__(self):  # noqa D107
         self.par_h1 = None
         self.par_h2 = None
         self.par_h3 = None
@@ -291,26 +329,43 @@ class CalibrationData:
         self.range_sw_err = None
 
     def set_from_array(self, calibration):
+        """Set paramaters from an array of bytes."""
         # Temperature related coefficients
         self.par_t1 = bytes_to_word(calibration[T1_MSB_REG], calibration[T1_LSB_REG])
-        self.par_t2 = bytes_to_word(calibration[T2_MSB_REG], calibration[T2_LSB_REG], bits=16, signed=True)
+        self.par_t2 = bytes_to_word(
+            calibration[T2_MSB_REG], calibration[T2_LSB_REG], bits=16, signed=True
+        )
         self.par_t3 = twos_comp(calibration[T3_REG], bits=8)
 
         # Pressure related coefficients
         self.par_p1 = bytes_to_word(calibration[P1_MSB_REG], calibration[P1_LSB_REG])
-        self.par_p2 = bytes_to_word(calibration[P2_MSB_REG], calibration[P2_LSB_REG], bits=16, signed=True)
+        self.par_p2 = bytes_to_word(
+            calibration[P2_MSB_REG], calibration[P2_LSB_REG], bits=16, signed=True
+        )
         self.par_p3 = twos_comp(calibration[P3_REG], bits=8)
-        self.par_p4 = bytes_to_word(calibration[P4_MSB_REG], calibration[P4_LSB_REG], bits=16, signed=True)
-        self.par_p5 = bytes_to_word(calibration[P5_MSB_REG], calibration[P5_LSB_REG], bits=16, signed=True)
+        self.par_p4 = bytes_to_word(
+            calibration[P4_MSB_REG], calibration[P4_LSB_REG], bits=16, signed=True
+        )
+        self.par_p5 = bytes_to_word(
+            calibration[P5_MSB_REG], calibration[P5_LSB_REG], bits=16, signed=True
+        )
         self.par_p6 = twos_comp(calibration[P6_REG], bits=8)
         self.par_p7 = twos_comp(calibration[P7_REG], bits=8)
-        self.par_p8 = bytes_to_word(calibration[P8_MSB_REG], calibration[P8_LSB_REG], bits=16, signed=True)
-        self.par_p9 = bytes_to_word(calibration[P9_MSB_REG], calibration[P9_LSB_REG], bits=16, signed=True)
+        self.par_p8 = bytes_to_word(
+            calibration[P8_MSB_REG], calibration[P8_LSB_REG], bits=16, signed=True
+        )
+        self.par_p9 = bytes_to_word(
+            calibration[P9_MSB_REG], calibration[P9_LSB_REG], bits=16, signed=True
+        )
         self.par_p10 = calibration[P10_REG]
 
         # Humidity related coefficients
-        self.par_h1 = (calibration[H1_MSB_REG] << HUM_REG_SHIFT_VAL) | (calibration[H1_LSB_REG] & BIT_H1_DATA_MSK)
-        self.par_h2 = (calibration[H2_MSB_REG] << HUM_REG_SHIFT_VAL) | (calibration[H2_LSB_REG] >> HUM_REG_SHIFT_VAL)
+        self.par_h1 = (calibration[H1_MSB_REG] << HUM_REG_SHIFT_VAL) | (
+            calibration[H1_LSB_REG] & BIT_H1_DATA_MSK
+        )
+        self.par_h2 = (calibration[H2_MSB_REG] << HUM_REG_SHIFT_VAL) | (
+            calibration[H2_LSB_REG] >> HUM_REG_SHIFT_VAL
+        )
         self.par_h3 = twos_comp(calibration[H3_REG], bits=8)
         self.par_h4 = twos_comp(calibration[H4_REG], bits=8)
         self.par_h5 = twos_comp(calibration[H5_REG], bits=8)
@@ -319,19 +374,26 @@ class CalibrationData:
 
         # Gas heater related coefficients
         self.par_gh1 = twos_comp(calibration[GH1_REG], bits=8)
-        self.par_gh2 = bytes_to_word(calibration[GH2_MSB_REG], calibration[GH2_LSB_REG], bits=16, signed=True)
+        self.par_gh2 = bytes_to_word(
+            calibration[GH2_MSB_REG], calibration[GH2_LSB_REG], bits=16, signed=True
+        )
         self.par_gh3 = twos_comp(calibration[GH3_REG], bits=8)
 
     def set_other(self, heat_range, heat_value, sw_error):
+        """Set other values."""
         self.res_heat_range = (heat_range & RHRANGE_MSK) // 16
         self.res_heat_val = heat_value
-        self.range_sw_err = (sw_error * RSERROR_MSK) // 16
+        self.range_sw_err = (sw_error & RSERROR_MSK) // 16
 
-# BME680 sensor settings structure which comprises of ODR,
-# over-sampling and filter settings.
 
 class TPHSettings:
-    def __init__(self):
+    """Structure for storing BME680 sensor settings.
+
+    Comprises of output data rate, over-sampling and filter settings.
+
+    """
+
+    def __init__(self):  # noqa D107
         # Humidity oversampling
         self.os_hum = None
         # Temperature oversampling
@@ -341,11 +403,11 @@ class TPHSettings:
         # Filter coefficient
         self.filter = None
 
-# BME680 gas sensor which comprises of gas settings
-## and status parameters
 
 class GasSettings:
-    def __init__(self):
+    """Structure for storing BME680 gas settings and status."""
+
+    def __init__(self):  # noqa D107
         # Variable to store nb conversion
         self.nb_conv = None
         # Variable to store heater control
@@ -357,10 +419,11 @@ class GasSettings:
         # Pointer to store duration profile
         self.heatr_dur = None
 
-# BME680 device structure
 
 class BME680Data:
-    def __init__(self):
+    """Structure to represent BME680 device."""
+
+    def __init__(self):  # noqa D107
         # Chip Id
         self.chip_id = None
         # Device Id

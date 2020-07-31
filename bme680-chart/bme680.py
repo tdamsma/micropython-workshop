@@ -2,7 +2,8 @@ from constants import *
 import math
 import time
 
-__version__ = '1.0.2'
+__version__ = "1.0.2"
+
 
 class BME680(BME680Data):
     """BOSCH BME680
@@ -13,6 +14,7 @@ class BME680(BME680Data):
     :param i2c_device: Optional smbus or compatible instance for facilitating i2c communications.
 
     """
+
     def __init__(self, i2c_addr=I2C_ADDR_PRIMARY, i2c_device=None):
         BME680Data.__init__(self)
 
@@ -20,11 +22,14 @@ class BME680(BME680Data):
         self._i2c = i2c_device
         if self._i2c is None:
             import smbus
+
             self._i2c = smbus.SMBus(1)
 
         self.chip_id = self._get_regs(CHIP_ID_ADDR, 1)
         if self.chip_id != CHIP_ID:
-            raise RuntimeError("BME680 Not Found. Invalid CHIP ID: 0x{0:02x}".format(self.chip_id))
+            raise RuntimeError(
+                "BME680 Not Found. Invalid CHIP ID: 0x{0:02x}".format(self.chip_id)
+            )
 
         self.soft_reset()
         self.set_power_mode(SLEEP_MODE)
@@ -140,7 +145,11 @@ class BME680(BME680Data):
 
         """
         if value > NBCONV_MAX or value < NBCONV_MIN:
-            raise ValueError("Profile '{}' should be between {} and {}".format(value, NBCONV_MIN, NBCONV_MAX))
+            raise ValueError(
+                "Profile '{}' should be between {} and {}".format(
+                    value, NBCONV_MIN, NBCONV_MAX
+                )
+            )
 
         self.gas_settings.nb_conv = value
         self._set_bits(CONF_ODR_RUN_GAS_NBC_ADDR, NBCONV_MSK, NBCONV_POS, value)
@@ -156,7 +165,9 @@ class BME680(BME680Data):
 
     def get_gas_status(self):
         """Get the current gas status"""
-        return (self._get_regs(CONF_ODR_RUN_GAS_NBC_ADDR, 1) & RUN_GAS_MSK) >> RUN_GAS_POS
+        return (
+            self._get_regs(CONF_ODR_RUN_GAS_NBC_ADDR, 1) & RUN_GAS_MSK
+        ) >> RUN_GAS_POS
 
     def set_gas_heater_profile(self, temperature, duration, nb_profile=0):
         """Set temperature and duration of gas sensor heater
@@ -179,7 +190,11 @@ class BME680(BME680Data):
 
         """
         if nb_profile > NBCONV_MAX or value < NBCONV_MIN:
-            raise ValueError("Profile '{}' should be between {} and {}".format(nb_profile, NBCONV_MIN, NBCONV_MAX))
+            raise ValueError(
+                "Profile '{}' should be between {} and {}".format(
+                    nb_profile, NBCONV_MIN, NBCONV_MAX
+                )
+            )
 
         self.gas_settings.heatr_temp = value
         temp = int(self._calc_heater_resistance(self.gas_settings.heatr_temp))
@@ -198,7 +213,11 @@ class BME680(BME680Data):
 
         """
         if nb_profile > NBCONV_MAX or value < NBCONV_MIN:
-            raise ValueError("Profile '{}' should be between {} and {}".format(nb_profile, NBCONV_MIN, NBCONV_MAX))
+            raise ValueError(
+                "Profile '{}' should be between {} and {}".format(
+                    nb_profile, NBCONV_MIN, NBCONV_MAX
+                )
+            )
 
         self.gas_settings.heatr_dur = value
         temp = self._calc_heater_duration(self.gas_settings.heatr_dur)
@@ -256,7 +275,7 @@ class BME680(BME680Data):
 
             temperature = self._calc_temperature(adc_temp)
             self.data.temperature = temperature / 100.0
-            self.ambient_temperature = temperature # Saved for heater calc
+            self.ambient_temperature = temperature  # Saved for heater calc
 
             self.data.pressure = self._calc_pressure(adc_pres) / 100.0
             self.data.humidity = self._calc_humidity(adc_hum) / 1000.0
@@ -293,52 +312,71 @@ class BME680(BME680Data):
         var3 = ((var3) * (self.calibration_data.par_t3 << 4)) >> 14
 
         # Save teperature data for pressure calculations
-        self.calibration_data.t_fine = (var2 + var3)
-        calc_temp = (((self.calibration_data.t_fine * 5) + 128) >> 8)
+        self.calibration_data.t_fine = var2 + var3
+        calc_temp = ((self.calibration_data.t_fine * 5) + 128) >> 8
 
         return calc_temp
 
     def _calc_pressure(self, pressure_adc):
         var1 = ((self.calibration_data.t_fine) >> 1) - 64000
-        var2 = ((((var1 >> 2) * (var1 >> 2)) >> 11) *
-            self.calibration_data.par_p6) >> 2
+        var2 = ((((var1 >> 2) * (var1 >> 2)) >> 11) * self.calibration_data.par_p6) >> 2
         var2 = var2 + ((var1 * self.calibration_data.par_p5) << 1)
         var2 = (var2 >> 2) + (self.calibration_data.par_p4 << 16)
-        var1 = (((((var1 >> 2) * (var1 >> 2)) >> 13 ) *
-                ((self.calibration_data.par_p3 << 5)) >> 3) +
-                ((self.calibration_data.par_p2 * var1) >> 1))
+        var1 = (
+            (((var1 >> 2) * (var1 >> 2)) >> 13) * ((self.calibration_data.par_p3 << 5))
+            >> 3
+        ) + ((self.calibration_data.par_p2 * var1) >> 1)
         var1 = var1 >> 18
 
         var1 = ((32768 + var1) * self.calibration_data.par_p1) >> 15
         calc_pressure = 1048576 - pressure_adc
-        calc_pressure = ((calc_pressure - (var2 >> 12)) * (3125))
+        calc_pressure = (calc_pressure - (var2 >> 12)) * (3125)
 
         if calc_pressure >= (1 << 31):
-            calc_pressure = ((calc_pressure // var1) << 1)
+            calc_pressure = (calc_pressure // var1) << 1
         else:
-            calc_pressure = ((calc_pressure << 1) // var1)
+            calc_pressure = (calc_pressure << 1) // var1
 
-        var1 = (self.calibration_data.par_p9 * (((calc_pressure >> 3) *
-            (calc_pressure >> 3)) >> 13)) >> 12
-        var2 = ((calc_pressure >> 2) *
-            self.calibration_data.par_p8) >> 13
-        var3 = ((calc_pressure >> 8) * (calc_pressure >> 8) *
-            (calc_pressure >> 8) *
-            self.calibration_data.par_p10) >> 17
+        var1 = (
+            self.calibration_data.par_p9
+            * (((calc_pressure >> 3) * (calc_pressure >> 3)) >> 13)
+        ) >> 12
+        var2 = ((calc_pressure >> 2) * self.calibration_data.par_p8) >> 13
+        var3 = (
+            (calc_pressure >> 8)
+            * (calc_pressure >> 8)
+            * (calc_pressure >> 8)
+            * self.calibration_data.par_p10
+        ) >> 17
 
-        calc_pressure = (calc_pressure) + ((var1 + var2 + var3 +
-            (self.calibration_data.par_p7 << 7)) >> 4)
+        calc_pressure = (calc_pressure) + (
+            (var1 + var2 + var3 + (self.calibration_data.par_p7 << 7)) >> 4
+        )
 
         return calc_pressure
 
     def _calc_humidity(self, humidity_adc):
         temp_scaled = ((self.calibration_data.t_fine * 5) + 128) >> 8
-        var1 = (humidity_adc - ((self.calibration_data.par_h1 * 16))) \
-                - (((temp_scaled * self.calibration_data.par_h3) // (100)) >> 1)
-        var2 = (self.calibration_data.par_h2
-                * (((temp_scaled * self.calibration_data.par_h4) // (100))
-                + (((temp_scaled * ((temp_scaled * self.calibration_data.par_h5) // (100))) >> 6)
-                // (100)) + (1 * 16384))) >> 10
+        var1 = (humidity_adc - ((self.calibration_data.par_h1 * 16))) - (
+            ((temp_scaled * self.calibration_data.par_h3) // (100)) >> 1
+        )
+        var2 = (
+            self.calibration_data.par_h2
+            * (
+                ((temp_scaled * self.calibration_data.par_h4) // (100))
+                + (
+                    (
+                        (
+                            temp_scaled
+                            * ((temp_scaled * self.calibration_data.par_h5) // (100))
+                        )
+                        >> 6
+                    )
+                    // (100)
+                )
+                + (1 * 16384)
+            )
+        ) >> 10
         var3 = var1 * var2
         var4 = self.calibration_data.par_h6 << 7
         var4 = ((var4) + ((temp_scaled * self.calibration_data.par_h7) // (100))) >> 4
@@ -346,37 +384,47 @@ class BME680(BME680Data):
         var6 = (var4 * var5) >> 1
         calc_hum = (((var3 + var6) >> 10) * (1000)) >> 12
 
-        return min(max(calc_hum,0),100000)
+        return min(max(calc_hum, 0), 100000)
 
     def _calc_gas_resistance(self, gas_res_adc, gas_range):
-        var1 = ((1340 + (5 * self.calibration_data.range_sw_err)) * (lookupTable1[gas_range])) >> 16
-        var2 = (((gas_res_adc << 15) - (16777216)) + var1)
-        var3 = ((lookupTable2[gas_range] * var1) >> 9)
-        calc_gas_res = ((var3 + (var2 >> 1)) / var2)
+        var1 = (
+            (1340 + (5 * self.calibration_data.range_sw_err))
+            * (lookupTable1[gas_range])
+        ) >> 16
+        var2 = ((gas_res_adc << 15) - (16777216)) + var1
+        var3 = (lookupTable2[gas_range] * var1) >> 9
+        calc_gas_res = (var3 + (var2 >> 1)) / var2
 
         return calc_gas_res
 
     def _calc_heater_resistance(self, temperature):
-        temperature = min(max(temperature,200),400)
+        temperature = min(max(temperature, 200), 400)
 
         var1 = ((self.ambient_temperature * self.calibration_data.par_gh3) / 1000) * 256
-        var2 = (self.calibration_data.par_gh1 + 784) * (((((self.calibration_data.par_gh2 + 154009) * temperature * 5) / 100) + 3276800) / 10)
+        var2 = (self.calibration_data.par_gh1 + 784) * (
+            (
+                (((self.calibration_data.par_gh2 + 154009) * temperature * 5) / 100)
+                + 3276800
+            )
+            / 10
+        )
         var3 = var1 + (var2 / 2)
-        var4 = (var3 / (self.calibration_data.res_heat_range + 4))
+        var4 = var3 / (self.calibration_data.res_heat_range + 4)
         var5 = (131 * self.calibration_data.res_heat_val) + 65536
-        heatr_res_x100 = (((var4 / var5) - 250) * 34)
-        heatr_res = ((heatr_res_x100 + 50) / 100)
+        heatr_res_x100 = ((var4 / var5) - 250) * 34
+        heatr_res = (heatr_res_x100 + 50) / 100
 
         return heatr_res
 
     def _calc_heater_duration(self, duration):
-        if duration < 0xfc0:
+        if duration < 0xFC0:
             factor = 0
 
-            while duration > 0x3f:
+            while duration > 0x3F:
                 duration /= 4
                 factor += 1
 
             return int(duration + (factor * 64))
 
-        return 0xff
+        return 0xFF
+
