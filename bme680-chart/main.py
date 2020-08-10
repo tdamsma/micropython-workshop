@@ -1,26 +1,13 @@
 from display import display
-from st7789 import (
-    BLUE,
-    GREEN,
-    RED,
-    YELLOW,
-    CYAN,
-    MAGENTA,
-    WHITE,
-    BLACK,
-    color565,
-    map_bitarray_to_rgb565,
-)
-
-display.fill(0)
-
+from st7789 import BLUE, YELLOW, WHITE, BLACK, color565, map_bitarray_to_rgb565
 from machine import Pin
 from i2c_adapter import I2CAdapter
-
-i2c = I2CAdapter(sda=Pin(22), scl=Pin(21))
 import bme680
 import time
 
+
+display.fill(BLACK)
+i2c = I2CAdapter(sda=Pin(22), scl=Pin(21))
 sensor = bme680.BME680(i2c_device=i2c, i2c_addr=0x77)
 display.fill(0)
 WIDTH = 240
