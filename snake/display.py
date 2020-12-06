@@ -1,4 +1,4 @@
-from machine import SPI, Pin
+from machine import SPI, Pin, SoftSPI
 import st7789
 
 BL_Pin = 4  # backlight pin
@@ -11,7 +11,8 @@ CS_Pin = 5  # chip select pin
 
 Pin(BL_Pin, Pin.OUT).on()
 
-spi = SPI(
+# spi = SPI()
+spi = SoftSPI(
     baudrate=80000000,
     miso=Pin(MISO_Pin),
     mosi=Pin(MOSI_Pin, Pin.OUT),
@@ -27,3 +28,5 @@ display = st7789.ST7789(
     reset=Pin(RESET_Pin, Pin.OUT),
 )
 display.init()
+print("display initialized")
+

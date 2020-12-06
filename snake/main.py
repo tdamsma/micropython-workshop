@@ -99,6 +99,8 @@ if __name__ == "__main__":
     global TURN
     handle_button_input()
     pos_x, pos_y, length, dir, board = init(display)
+
+    print("starting game")
     # main loop
     while True:
         # clear board / decrement snake counts
