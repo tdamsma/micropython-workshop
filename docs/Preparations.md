@@ -1,12 +1,17 @@
 
 
-## Getting started
+## Preparations
 
 Preparations for a workshop using micropython on a ttgo ESP32 with integrated 240 x 135 pixel lcd color display
 
+What you need is:
+ - pc/laptop
+ - usb-c cable
+ - ESP32 dev board
+
 <img src="board.jpg" alt="ESP32" title="ESP32 with display" width="50%" height="50%" />
 
-First we need to establish conectivity between the board and your computer
+The goal of these preparations is to establish connectivity between the board and your computer.
 
  - Install drivers for the USB to UART Bridge
    Find them here: https://www.silabs.com/developers/usb-to-uart-bridge-vcp-drivers
