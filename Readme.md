@@ -5,6 +5,34 @@ This is a workshop for using micropython on a ttgo ESP32 with integrated 240 x 1
 <img src="https://imgaz3.staticbg.com/thumb/large/oaupload/banggood/images/16/CA/808b45ee-f288-4048-a4a9-b21a5d1c7e13.jpg" alt="ESP32"
 	title="ESP32 with display" width="50%" height="50%" />
 
+
+## Preparations
+
+Install drivers for the USB to UART Bridge
+Find them here: https://www.silabs.com/developers/usb-to-uart-bridge-vcp-drivers
+This one for windows: https://www.silabs.com/documents/public/software/CP210x_Universal_Windows_Driver.zip
+
+in python on (and if on windows (not WSL)
+pip install esptool, rshell, adafruit-ampy
+
+esptool --chip esp32 chip_id
+
+
+
+git clone git@github.com:tdamsma/micropython-workshop.git
+python -m virtualenv --prompt mpy .venv
+
+
+
+AMPY_PORT = COM6
+RSHELL_PORT = COM6
+
+https://github.com/dhylands/rshell
+
+--buffer-size
+
+
+rshell -p COM6 repl
 ## Building the firmware
 
 To run the latest version of the pycopy micropython fork with driver for the display follow the steps below:

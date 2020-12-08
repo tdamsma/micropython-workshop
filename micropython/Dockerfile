@@ -1,8 +1,6 @@
-FROM ubuntu:bionic
 
-ARG REPO=https://github.com/pfalcon/pycopy
-ARG BRANCH=v3.1.5
-ARG DOUBLE_PRECISION_FLOATS=false
+# based on https://github.com/flusflas/micropython-builder
+FROM ubuntu:bionic
 
 ENV WORK_DIR=/home/esp32
 
@@ -41,10 +39,23 @@ RUN wget https://dl.espressif.com/dl/xtensa-esp32-elf-linux64-1.22.0-80-g6c4433a
 
 ENV PATH="${WORK_DIR}/esp/xtensa-esp32-elf/bin:${PATH}"
 
+# Clone ESPIDF
+
+WORKDIR ${WORK_DIR}
+
+RUN git clone https://github.com/espressif/esp-idf.git
+
 # PYCOPY
 
-RUN git clone ${REPO} micropython && \
-    cd micropython && \
+ARG REPO=https://github.com/pfalcon/pycopy
+
+RUN git clone ${REPO} micropython
+
+WORKDIR ${WORK_DIR}/micropython
+
+ARG BRANCH=v3.4.0
+
+RUN git fetch origin ${BRANCH} && \
     git checkout ${BRANCH} && \
     cd ports/esp32/
 
@@ -75,22 +86,46 @@ RUN grep -oP '^ESPIDF_SUPHASH_V3 ?:= ?\K(.*)$' Makefile > ${WORK_DIR}/espdif_sup
 
 WORKDIR ${WORK_DIR}
 
-RUN git clone https://github.com/espressif/esp-idf.git
-
 RUN export ESPIDF_SUPHASH_V3=$(cat ${WORK_DIR}/espdif_suphash_v3) && \
     cd esp-idf && \
+    git fetch origin ${ESPIDF_SUPHASH_V3} && \
     git checkout ${ESPIDF_SUPHASH_V3} && \
-    git submodule update --init
+    git submodule update --init && \
+    cd components/mbedtls/ && \
+    rm -rf mbedtls && \
+    git clone -b mbedtls-2.16.5-idf-pycopy https://github.com/pfalcon/mbedtls/
+
+# COMPILE FIRMWARE
+
+WORKDIR ${WORK_DIR}/micropython/ports/esp32
+
+RUN git checkout ${BRANCH}
+
+# Set double precision floats if set
+ARG DOUBLE_PRECISION_FLOATS=false
+RUN if [ "$DOUBLE_PRECISION_FLOATS" = "true" ]; then \
+    echo "\e[32mDouble precision floats\e[39m"; \
+    sed -i 's/MICROPY_FLOAT_IMPL_FLOAT/MICROPY_FLOAT_IMPL_DOUBLE/g' mpconfigport.h; \
+    fi
+
+# Copy the module file/directory (if set) into /modules
+ARG MODULES_PATH=''
+COPY ${MODULES_PATH} /temp/
+
+RUN if [ -z $MODULES_PATH ]; then \
+    rm -R /temp; \
+    else \
+    echo "\e[32mCopying files to modules...\e[39m"; \
+    ls /temp | sed -e 's/^/    - /'; \
+    mv /temp/* modules; \
+    fi
 
 # Install custom components
 
 RUN git clone https://github.com/devbis/st7789_mpy.git ${WORK_DIR}/st7789_mpy
 RUN cd ${WORK_DIR}/micropython/ports/esp32 && make USER_C_MODULES=../../../st7789_mpy/ all
 
-RUN git clone https://github.com/devbis/st7789_mpy.git ${WORK_DIR}/st7789_mpy
-RUN cd ${WORK_DIR}/micropython/ports/esp32 && make USER_C_MODULES=../../../st7789_mpy/ all
 # COMPILE FIRMWARE
-
 WORKDIR ${WORK_DIR}/micropython/ports/esp32
 
 # Set double precision floats if set
@@ -99,4 +134,5 @@ RUN if [ "$DOUBLE_PRECISION_FLOATS" = "true" ]; then \
     sed -i 's/MICROPY_FLOAT_IMPL_FLOAT/MICROPY_FLOAT_IMPL_DOUBLE/g' mpconfigport.h; \
     fi
 
-RUN make
+RUN make 
+
