@@ -20,7 +20,7 @@ The goal of these preparations is to establish connectivity between the board an
  - Install required tools, which are python based. You can use any 3.7+ environment on your computer. Just be sure that ist has access to your local serial ports. (`COM1`,  `COM2` etc on windows or `/dev/ttyUSB` etc on unix like). **This excludes WSL2**, so if on windows use a python version installed under windows.
 
     ```
-    pip install esptool, rshell, adafruit-ampy
+    pip install esptool rshell adafruit-ampy
     ```
 
  - Connect the board with a usb-c cable. It should show up as a usb-to-serial device somewhere. In windows,   check the device manager. 
@@ -32,7 +32,7 @@ The goal of these preparations is to establish connectivity between the board an
 
  - Communicate with the chip:
    ```sh
-   esptool --chip esp32 chip_id
+   esptool.py --chip esp32 chip_id
    ```
 
    If the output looks something like below, you are all set:  
