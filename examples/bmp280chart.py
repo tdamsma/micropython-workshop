@@ -53,7 +53,7 @@ while True:
         scaled_h[n] = v
     i = j
 
-    display.draw_text(10, 0, "{: 5.2f} mBar".format(data_t[j]), color=YELLOW)
+    display.draw_text(10, 0, "{: 5.2f} C".format(data_t[j]), color=YELLOW)
     display.draw_text(30, 0, "{: 5.2f} mBar".format(data_p[j]), color=BLUE)
     display.draw_text(50, 0, "{: 5.2f} %".format(data_h[j]), color=RED)
     time.sleep(0.01)

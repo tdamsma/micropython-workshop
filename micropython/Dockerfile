@@ -95,6 +95,36 @@ RUN export ESPIDF_SUPHASH_V3=$(cat ${WORK_DIR}/espdif_suphash_v3) && \
     rm -rf mbedtls && \
     git clone -b mbedtls-2.16.5-idf-pycopy https://github.com/pfalcon/mbedtls/
 
+# Build unix version to be able to add modules, this bit is optional
+# Not sure if all packages below are needed
+RUN apt-get install -qqy \
+    autoconf \
+    automake \
+    bash \
+    bison \
+    build-essential \
+    bzip2 \
+    flex \
+    g++ \
+    gawk \
+    gcc \
+    git \
+    gperf \
+    ncurses-dev \
+    pkg-config \
+    python \
+    python-dev \
+    python-serial
+
+RUN make --directory ${WORK_DIR}/micropython/ports/unix
+
+# add modules to be frozen in the built firmware, customize as required
+RUN cd ${WORK_DIR}/micropython/ports/unix && ./pycopy -m upip install -p ../esp32/modules \
+    micropython-uasyncio \
+    micropython-uaiohttpclient \
+    micropython-logging
+
+
 # COMPILE FIRMWARE
 
 WORKDIR ${WORK_DIR}/micropython/ports/esp32

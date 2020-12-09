@@ -2,9 +2,10 @@
 # Program for the Datalab Micropython Workshop
 
 Goals:
- - Have fun
- - Demystify microprocessors
- - Share some of my hobby experiences
+- Have fun
+- Demystify microprocessors
+- Share some of my hobby experiences
+- Closer to the hardware
 
 1. Hardware
     - ESP32
