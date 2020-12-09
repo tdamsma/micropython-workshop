@@ -53,7 +53,6 @@ while True:
         np.write()
         time.sleep(0.01)
 
-while True:
     for k in range(12):
         for n in range(12):
             i = (n + k) % 12

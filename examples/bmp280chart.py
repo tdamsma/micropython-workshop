@@ -1,15 +1,8 @@
 from display import display
 from st7789 import (
     BLUE,
-    GREEN,
     RED,
     YELLOW,
-    CYAN,
-    MAGENTA,
-    WHITE,
-    BLACK,
-    color565,
-    map_bitarray_to_rgb565,
 )
 
 display.fill(0)
@@ -60,9 +53,8 @@ while True:
         scaled_h[n] = v
     i = j
 
-    display.draw_text(0, 0, "{: 5.2f} C".fo
-    rmat(data_t[j]), color=YELLOW)
-    display.draw_text(20, 0, "{: 5.2f} mBar".format(data_p[j]), color=BLUE)
-    display.draw_text(40, 0, "{: 5.2f} %".format(data_h[j]), color=RED)
+    display.draw_text(10, 0, "{: 5.2f} mBar".format(data_t[j]), color=YELLOW)
+    display.draw_text(30, 0, "{: 5.2f} mBar".format(data_p[j]), color=BLUE)
+    display.draw_text(50, 0, "{: 5.2f} %".format(data_h[j]), color=RED)
     time.sleep(0.01)
 
