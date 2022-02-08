@@ -53,7 +53,7 @@ RUN git clone ${REPO} micropython
 
 WORKDIR ${WORK_DIR}/micropython
 
-ARG BRANCH=v3.4.0
+ARG BRANCH=master
 
 RUN git fetch origin ${BRANCH} && \
     git checkout ${BRANCH} && \
@@ -140,7 +140,7 @@ RUN if [ "$DOUBLE_PRECISION_FLOATS" = "true" ]; then \
 
 # Copy the module file/directory (if set) into /modules
 ARG MODULES_PATH=''
-COPY ${MODULES_PATH} /temp/
+COPY ${MODULES_PATH} /temp/`§
 
 RUN if [ -z $MODULES_PATH ]; then \
     rm -R /temp; \

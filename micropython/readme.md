@@ -11,7 +11,8 @@ docker rm -f dummy 1>/dev/null
 ```
 
 ## Flashing custom firmware
+
 ```
-esptool --chip esp32 erase_flash
-esptool --chip esp32 write_flash -z 0x1000 firmware.bin
+esptool.py --chip esp32 erase_flash
+esptool.py --chip esp32 write_flash -z 0x1000 firmware.bin
 ```
